@@ -1,76 +1,60 @@
 import 'ol/ol.css';
-import Map from 'ol/Map';
-import View from 'ol/View';
-import TileLayer from 'ol/layer/Tile';
-import ImageLayer from 'ol/layer/Image';
-import OSM from 'ol/source/OSM';
-import ImageWMS from 'ol/source/ImageWMS';
-import { fromLonLat } from 'ol/proj';
+import Map from 'ol/Map.js';
+import View from 'ol/View.js';
+import TileLayer from 'ol/layer/Tile.js';
+import VectorLayer from 'ol/layer/Vector.js';
+import OSM from 'ol/source/OSM.js';
+import VectorSource from 'ol/source/Vector.js';
+import GeoJSON from 'ol/format/GeoJSON.js';
+import { fromLonLat } from 'ol/proj.js';
+import { stylefunction } from 'ol-mapbox-style';
 
-
-// Базовая подложка OpenStreetMap
-const osmLayer = new TileLayer({
-  source: new OSM()
-});
-
-
-// Cлой зданий
-const buildingsLayer = new ImageLayer({
-  source: new ImageWMS({
-    url: 'http://localhost:8080/geoserver/gis/wms',
-    params: {
-      LAYERS: 'gis:buildings',
-      TILED: true
-    },
-    ratio: 1,
-    serverType: 'geoserver'
+const overtureLayer = new VectorLayer({
+  source: new VectorSource({
+    url: '/data/overture.geojson',
+    format: new GeoJSON()
   })
 });
 
+stylefunction(overtureLayer, {
+  version: 8,
+  sources: {
+    overture: {
+      type: 'geojson',
+      data: '/data/overture.geojson'
+    }
+  },
+  layers: [
+    {
+      id: 'overture-buildings',
+      type: 'fill',
+      source: 'overture',
+      paint: {
+        'fill-color': [
+          'match',
+          ['get', 'source_type'],
+          'my', '#2ca25f',
+          'osm', '#2b8cbe',
+          'ml', '#fdae61',
+          '#999999'
+        ],
+        'fill-opacity': 0.75,
+        'fill-outline-color': '#333333'
+      }
+    }
+  ]
+}, 'overture');
 
-// Cлой дорог
-const roadsLayer = new ImageLayer({
-  source: new ImageWMS({
-    url: 'http://localhost:8080/geoserver/gis/wms',
-    params: {
-      LAYERS: 'gis:roads',
-      TILED: true
-    },
-    ratio: 1,
-    serverType: 'geoserver'
-  })
-});
-
-
-// Cлой POI
-const poiLayer = new ImageLayer({
-  source: new ImageWMS({
-    url: 'http://localhost:8080/geoserver/gis/wms',
-    params: {
-      LAYERS: 'gis:poi',
-      TILED: true
-    },
-    ratio: 1,
-    serverType: 'geoserver'
-  })
-});
-
-
-// Создание карты
-const map = new Map({
+new Map({
   target: 'map',
   layers: [
-    osmLayer,
-    buildingsLayer,
-    roadsLayer,
-    poiLayer
+    new TileLayer({
+      source: new OSM()
+    }),
+    overtureLayer
   ],
   view: new View({
-
-    // Центр карты
     center: fromLonLat([50.333581, 53.294649]),
-
-    // Масштаб
     zoom: 17.5
   })
 });
